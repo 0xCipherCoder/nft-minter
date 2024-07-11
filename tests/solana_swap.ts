@@ -107,6 +107,13 @@ describe("solana_swap", () => {
   });
 
   it("Swaps SOL for NFT", async () => {
+    // Get user's initial SOL balance
+    const initialUserBalance = await provider.connection.getBalance(user.publicKey);
+
+    // Check the vault's token balance (should be 1 initially)
+    let vaultTokenBalance = await provider.connection.getTokenAccountBalance(vaultTokenAccount);
+    assert.equal(vaultTokenBalance.value.uiAmount, 1);
+
     // Swap SOL for NFT
     await swapProgram.methods.swapSolForNft(new anchor.BN(100000000))
       .accounts({
@@ -134,11 +141,26 @@ describe("solana_swap", () => {
     assert.equal(userTokenBalance.value.uiAmount, 1);
 
     // Check the vault's token balance (should be 0)
-    const vaultTokenBalance = await provider.connection.getTokenAccountBalance(vaultTokenAccount);
+    vaultTokenBalance = await provider.connection.getTokenAccountBalance(vaultTokenAccount);
     assert.equal(vaultTokenBalance.value.uiAmount, 0);
 
     // Check the protocol wallet's SOL balance
     const protocolWalletBalance = await provider.connection.getBalance(protocolWallet.publicKey);
     assert.equal(protocolWalletBalance, 110000000); // 10000000 (lock fee) + 100000000 (swap fee)
+
+     // Check the user's SOL balance
+     const finalUserBalance = await provider.connection.getBalance(user.publicKey);
+     const expectedUserBalance = initialUserBalance - 100000000;
+     assert.equal(finalUserBalance, expectedUserBalance);
+
+     // Verify the NFT ownership by checking if it's in the user's account
+    const nftAccountInfo = await provider.connection.getParsedAccountInfo(userTokenAccount);
+    const nftAccountData = nftAccountInfo.value.data.parsed;
+    assert.equal(nftAccountData.info.tokenAmount.amount, '1', 'User should own 1 NFT after the swap');
+
+    // Ensure the vault's token account is empty
+    const vaultTokenAccountInfo = await provider.connection.getParsedAccountInfo(vaultTokenAccount);
+    const vaultTokenAccountData = vaultTokenAccountInfo.value.data.parsed;
+    assert.equal(vaultTokenAccountData.info.tokenAmount.amount, '0', 'Vault token account should be empty after the swap');
   });
 });
