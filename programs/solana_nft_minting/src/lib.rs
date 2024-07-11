@@ -1,5 +1,6 @@
 use anchor_lang::prelude::*;
 use anchor_spl::token::{self, Mint, TokenAccount, MintTo, Token};
+use anchor_spl::associated_token::AssociatedToken;
 
 declare_id!("6KhV2RDrv9UGfdEKeKE5N7Jp2MXLY8pXuWqXPnSMRFJo");
 
@@ -35,15 +36,15 @@ pub mod solana_nft_minting {
                 &i.to_le_bytes(),
                 &[ctx.bumps.nft_collection],
             ];
-            let signer = &[&seeds[..]];
+            let _signer = &[&seeds[..]];
 
             let cpi_accounts = MintTo {
                 mint: ctx.accounts.mint.to_account_info(),
                 to: ctx.accounts.token_account.to_account_info(),
-                authority: ctx.accounts.mint_authority.to_account_info(),
+                authority: ctx.accounts.user.to_account_info(),
             };
             let cpi_program = ctx.accounts.token_program.to_account_info();
-            let cpi_ctx = CpiContext::new_with_signer(cpi_program, cpi_accounts, signer);
+            let cpi_ctx = CpiContext::new(cpi_program, cpi_accounts);
 
             token::mint_to(cpi_ctx, 1)?;
 
@@ -61,7 +62,7 @@ pub struct MintNFTCollection<'info> {
     #[account(
         init,
         payer = user,
-        space = 8 + 32 + 1 + 4 + (64 * collection_size as usize), // Adjust as needed
+        space = 8 + 32 + 1 + 4 + (64 * collection_size as usize),
         seeds = [b"nft_collection", user.key().as_ref()],
         bump
     )]
@@ -71,25 +72,23 @@ pub struct MintNFTCollection<'info> {
         init,
         payer = user,
         mint::decimals = 0,
-        mint::authority = mint_authority,
+        mint::authority = user,
     )]
     pub mint: Account<'info, Mint>,
 
     #[account(
-        init,
+        init_if_needed,
         payer = user,
-        token::mint = mint,
-        token::authority = mint_authority,
+        associated_token::mint = mint,
+        associated_token::authority = user,
     )]
     pub token_account: Account<'info, TokenAccount>,
-
-    #[account(mut)]
-    pub mint_authority: Signer<'info>,
 
     #[account(mut)]
     pub user: Signer<'info>,
 
     pub token_program: Program<'info, Token>,
+    pub associated_token_program: Program<'info, AssociatedToken>,
     pub system_program: Program<'info, System>,
     pub rent: Sysvar<'info, Rent>,
 }

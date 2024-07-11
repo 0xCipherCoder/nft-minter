@@ -1,27 +1,39 @@
 use anchor_lang::prelude::*;
-use anchor_spl::token::{self, Transfer, Token};
+use anchor_spl::token::{self, Token, TokenAccount, Transfer};
 
 declare_id!("AT1rUerisJ8vproAoX5ic93EGgGfBGyF1izobFuAgndN");
 
 #[program]
-mod solana_swap {
+pub mod solana_swap {
     use super::*;
 
-    pub fn swap_sol_for_nft(ctx: Context<SwapSolForNFT>, amount: u64) -> Result<()> {
+    pub fn swap_sol_for_nft(ctx: Context<SwapSolForNFT>, price: u64) -> Result<()> {
         let vault = &ctx.accounts.vault;
-        require!(vault.locked, ErrorCode::NFTNotLocked);
 
-        // Perform SOL to NFT swap
+        // Ensure vault is locked
+        require!(vault.locked, ErrorCode::VaultNotLocked);
+
+        // Transfer SOL to the protocol wallet
+        let protocol_wallet = &ctx.accounts.protocol_wallet;
+        let authority = &ctx.accounts.authority;
+        **authority.try_borrow_mut_lamports()? -= price;
+        **protocol_wallet.try_borrow_mut_lamports()? += price;
+
+        // Transfer NFT from vault to user
         let cpi_accounts = Transfer {
-            from: ctx.accounts.payer.to_account_info(),
-            to: ctx.accounts.receiver.to_account_info(),
-            authority: ctx.accounts.authority.to_account_info(),
+            from: ctx.accounts.vault_token_account.to_account_info(),
+            to: ctx.accounts.user_token_account.to_account_info(),
+            authority: ctx.accounts.vault.to_account_info(),
         };
-
         let cpi_program = ctx.accounts.token_program.to_account_info();
-        let cpi_context = CpiContext::new(cpi_program, cpi_accounts);
+        let seeds = &[b"vault", vault.owner.as_ref(), &[ctx.bumps.vault]];
+        let signer = &[&seeds[..]];
+        let cpi_ctx = CpiContext::new_with_signer(cpi_program, cpi_accounts, signer);
+        token::transfer(cpi_ctx, 1)?;
 
-        token::transfer(cpi_context, amount)?;
+        // Update vault status
+        let vault = &mut ctx.accounts.vault;
+        vault.locked = false;
 
         Ok(())
     }
@@ -29,29 +41,41 @@ mod solana_swap {
 
 #[derive(Accounts)]
 pub struct SwapSolForNFT<'info> {
-    #[account(mut)]
+    #[account(
+        mut,
+        seeds = [b"vault", vault.owner.as_ref()],
+        bump
+    )]
     pub vault: Account<'info, Vault>,
+
     #[account(mut)]
-    pub payer: Signer<'info>,
-    /// CHECK: This account is safe because it is only receiving tokens, not modifying them.
-    #[account(mut)]
-    pub receiver: AccountInfo<'info>,
+    pub user_token_account: Account<'info, TokenAccount>,
+
+    #[account(
+        mut,
+        associated_token::mint = vault.nft_mint,
+        associated_token::authority = vault
+    )]
+    pub vault_token_account: Account<'info, TokenAccount>,
+
     #[account(mut)]
     pub authority: Signer<'info>,
-    pub token_program: Program<'info, Token>,
-    pub system_program: Program<'info, System>,
-    pub rent: Sysvar<'info, Rent>,
-}
+    /// CHECK: This account is safe because it is only receiving tokens, not modifying them.
+    #[account(mut)]
+    pub protocol_wallet: AccountInfo<'info>,
 
-#[error_code]
-pub enum ErrorCode {
-    #[msg("NFT is not locked in the vault.")]
-    NFTNotLocked,
+    pub token_program: Program<'info, Token>,
 }
 
 #[account]
 pub struct Vault {
     pub owner: Pubkey,
-    pub nft: Pubkey,
+    pub nft_mint: Pubkey,
     pub locked: bool,
+}
+
+#[error_code]
+pub enum ErrorCode {
+    #[msg("The vault is not locked.")]
+    VaultNotLocked,
 }

@@ -5,7 +5,7 @@ seeds = false
 skip-lint = false
 
 [programs.localnet]
-solana_nft_minting = "GXFZLamQc3tELeRYeoVX88uthLCC12j7NRFkyCSXcDwd"
+solana_nft_minting = "6KhV2RDrv9UGfdEKeKE5N7Jp2MXLY8pXuWqXPnSMRFJo"
 solana_swap = "AT1rUerisJ8vproAoX5ic93EGgGfBGyF1izobFuAgndN"
 solana_vault = "EZSkMDXfzCmy4n7sJoesYCoacANCcJvit5R5QDJ9m5rT"
 
@@ -14,7 +14,7 @@ url = "https://api.apr.dev"
 
 [provider]
 cluster = "Localnet"
-wallet = "/home/pradip/.config/solana/id.json"
+wallet = "~/.config/solana/id.json"
 
 [scripts]
 test = "yarn run ts-mocha -p ./tsconfig.json -t 1000000 tests/**/*.ts"
