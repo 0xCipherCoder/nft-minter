@@ -20,7 +20,7 @@ pub mod solana_vault {
         vault.owner = *ctx.accounts.authority.key;
         vault.nft_mint = ctx.accounts.nft_mint.key();
         vault.locked = true;
-    
+
         // Transfer the NFT to the vault
         let cpi_accounts = token::Transfer {
             from: ctx.accounts.user_token_account.to_account_info(),
@@ -30,7 +30,7 @@ pub mod solana_vault {
         let cpi_program = ctx.accounts.token_program.to_account_info();
         let cpi_ctx = CpiContext::new(cpi_program, cpi_accounts);
         token::transfer(cpi_ctx, 1)?;
-    
+
         // Transfer protocol fee to the protocol wallet
         let cpi_accounts = anchor_lang::system_program::Transfer {
             from: ctx.accounts.authority.to_account_info(),
@@ -39,7 +39,7 @@ pub mod solana_vault {
         let cpi_program = ctx.accounts.system_program.to_account_info();
         let cpi_ctx = CpiContext::new(cpi_program, cpi_accounts);
         anchor_lang::system_program::transfer(cpi_ctx, protocol_fee)?;
-    
+
         Ok(())
     }
 
