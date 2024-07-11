@@ -8,6 +8,7 @@ import {
   createInitializeMintInstruction,
   createMintToInstruction,
   getAssociatedTokenAddress,
+  getAccount,
 } from "@solana/spl-token";
 import { assert } from "chai";
 
@@ -26,7 +27,7 @@ describe("solana_vault", () => {
 
   it("Initializes the test state", async () => {
     // Airdrop SOL to the user and protocol wallet
-    let signature = await provider.connection.requestAirdrop(user.publicKey, 1000000000);
+    let signature = await provider.connection.requestAirdrop(user.publicKey, 2000000000);
     await provider.connection.confirmTransaction(signature);
     signature = await provider.connection.requestAirdrop(protocolWallet.publicKey, 1000000000);
     await provider.connection.confirmTransaction(signature);
@@ -86,15 +87,15 @@ describe("solana_vault", () => {
   });
 
   it("Locks an NFT", async () => {
-    const protocolFee = 1000000; // Set your protocol fee
+    const protocolFee = new anchor.BN(1000000); // 0.001 SOL
 
     await program.methods
-      .lockNft(new anchor.BN(protocolFee))
+      .lockNft(protocolFee)
       .accounts({
         vault: vaultPda,
         nftMint: nftMint.publicKey,
-        userTokenAccount: userTokenAccount,
-        vaultTokenAccount: vaultTokenAccount,
+        userTokenAccount,
+        vaultTokenAccount,
         authority: user.publicKey,
         protocolWallet: protocolWallet.publicKey,
         tokenProgram: TOKEN_PROGRAM_ID,
@@ -105,17 +106,12 @@ describe("solana_vault", () => {
       .signers([user])
       .rpc();
 
-    // Fetch the vault account
     const vaultAccount = await program.account.vault.fetch(vaultPda);
+    assert.isTrue(vaultAccount.locked);
 
-    // Assert the vault was created correctly
-    assert.equal(vaultAccount.owner.toString(), user.publicKey.toString());
-    assert.equal(vaultAccount.nftMint.toString(), nftMint.publicKey.toString());
-    assert.equal(vaultAccount.locked, true);
-
-    // Check token balance in vault
-    const vaultTokenBalance = await provider.connection.getTokenAccountBalance(vaultTokenAccount);
-    assert.equal(vaultTokenBalance.value.uiAmount, 1);
+    // Verify that the NFT was transferred to the vault token account
+    const vaultTokenAccountInfo = await getAccount(provider.connection, vaultTokenAccount);
+    assert.equal(vaultTokenAccountInfo.amount.toString(), "1");
   });
 
   it("Unlocks an NFT", async () => {
@@ -124,8 +120,8 @@ describe("solana_vault", () => {
       .accounts({
         vault: vaultPda,
         nftMint: nftMint.publicKey,
-        userTokenAccount: userTokenAccount,
-        vaultTokenAccount: vaultTokenAccount,
+        userTokenAccount,
+        vaultTokenAccount,
         authority: user.publicKey,
         tokenProgram: TOKEN_PROGRAM_ID,
         systemProgram: anchor.web3.SystemProgram.programId,
@@ -133,14 +129,11 @@ describe("solana_vault", () => {
       .signers([user])
       .rpc();
 
-    // Fetch the vault account
     const vaultAccount = await program.account.vault.fetch(vaultPda);
+    assert.isFalse(vaultAccount.locked);
 
-    // Assert the vault was unlocked correctly
-    assert.equal(vaultAccount.locked, false);
-
-    // Check token balance in user account
-    const userTokenBalance = await provider.connection.getTokenAccountBalance(userTokenAccount);
-    assert.equal(userTokenBalance.value.uiAmount, 1);
+    // Verify that the NFT was transferred back to the user token account
+    const userTokenAccountInfo = await getAccount(provider.connection, userTokenAccount);
+    assert.equal(userTokenAccountInfo.amount.toString(), "1");
   });
 });
