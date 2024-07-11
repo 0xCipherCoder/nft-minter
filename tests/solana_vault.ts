@@ -72,6 +72,17 @@ describe("solana_vault", () => {
     const tx = new anchor.web3.Transaction().add(createMintIx, initMintIx, createUserTokenAccountIx, mintToUserTokenAccountIx);
 
     await provider.sendAndConfirm(tx, [user, nftMint]);
+
+    // Initialize the vault
+    await program.methods
+      .initializeVault()
+      .accounts({
+        vault: vaultPda,
+        authority: user.publicKey,
+        systemProgram: anchor.web3.SystemProgram.programId,
+      })
+      .signers([user])
+      .rpc();
   });
 
   it("Locks an NFT", async () => {

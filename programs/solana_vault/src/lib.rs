@@ -8,6 +8,13 @@ declare_id!("EZSkMDXfzCmy4n7sJoesYCoacANCcJvit5R5QDJ9m5rT");
 pub mod solana_vault {
     use super::*;
 
+    pub fn initialize_vault(ctx: Context<InitializeVault>) -> Result<()> {
+        let vault = &mut ctx.accounts.vault;
+        vault.owner = *ctx.accounts.authority.key;
+        vault.locked = false;
+        Ok(())
+    }
+
     pub fn lock_nft(ctx: Context<LockNFT>, protocol_fee: u64) -> Result<()> {
         let vault = &mut ctx.accounts.vault;
         vault.owner = *ctx.accounts.authority.key;
@@ -33,28 +40,25 @@ pub mod solana_vault {
     }
 
     pub fn unlock_nft(ctx: Context<UnlockNFT>) -> Result<()> {
-
         // Perform the ownership check manually
         require!(ctx.accounts.vault.owner == *ctx.accounts.authority.key, ErrorCode::Unauthorized);
         require!(ctx.accounts.vault.locked, ErrorCode::AlreadyUnlocked);
 
-        {
-            // Transfer the NFT back to the user
-            let cpi_accounts = token::Transfer {
-                from: ctx.accounts.vault_token_account.to_account_info(),
-                to: ctx.accounts.user_token_account.to_account_info(),
-                authority: ctx.accounts.vault.to_account_info(),
-            };
-            let cpi_program = ctx.accounts.token_program.to_account_info();
-            let seeds = &[
-                b"vault",
-                ctx.accounts.authority.key.as_ref(),
-                &[ctx.bumps.vault],
-            ];
-            let signer = &[&seeds[..]];
-            let cpi_ctx = CpiContext::new_with_signer(cpi_program, cpi_accounts, signer);
-            token::transfer(cpi_ctx, 1)?;
-        }
+        // Transfer the NFT back to the user
+        let cpi_accounts = token::Transfer {
+            from: ctx.accounts.vault_token_account.to_account_info(),
+            to: ctx.accounts.user_token_account.to_account_info(),
+            authority: ctx.accounts.vault.to_account_info(),
+        };
+        let cpi_program = ctx.accounts.token_program.to_account_info();
+        let seeds = &[
+            b"vault",
+            ctx.accounts.authority.key.as_ref(),
+            &[ctx.bumps.vault],
+        ];
+        let signer = &[&seeds[..]];
+        let cpi_ctx = CpiContext::new_with_signer(cpi_program, cpi_accounts, signer);
+        token::transfer(cpi_ctx, 1)?;
 
         let vault = &mut ctx.accounts.vault;
         vault.locked = false;
@@ -64,11 +68,24 @@ pub mod solana_vault {
 }
 
 #[derive(Accounts)]
-pub struct LockNFT<'info> {
+pub struct InitializeVault<'info> {
     #[account(
         init,
         payer = authority,
         space = 8 + 32 + 32 + 1,
+        seeds = [b"vault", authority.key().as_ref()],
+        bump
+    )]
+    pub vault: Account<'info, Vault>,
+    #[account(mut)]
+    pub authority: Signer<'info>,
+    pub system_program: Program<'info, System>,
+}
+
+#[derive(Accounts)]
+pub struct LockNFT<'info> {
+    #[account(
+        mut,
         seeds = [b"vault", authority.key().as_ref()],
         bump
     )]
@@ -85,7 +102,7 @@ pub struct LockNFT<'info> {
     pub user_token_account: Account<'info, TokenAccount>,
 
     #[account(
-        init,
+        init_if_needed,
         payer = authority,
         associated_token::mint = nft_mint,
         associated_token::authority = vault
@@ -104,7 +121,6 @@ pub struct LockNFT<'info> {
     pub system_program: Program<'info, System>,
     pub rent: Sysvar<'info, Rent>,
 }
-
 
 #[derive(Accounts)]
 pub struct UnlockNFT<'info> {
@@ -140,7 +156,7 @@ pub struct UnlockNFT<'info> {
 
 #[account]
 pub struct Vault {
-    pub owner: Pubkey, // This field exists in the Vault struct
+    pub owner: Pubkey,
     pub nft_mint: Pubkey,
     pub locked: bool,
 }
