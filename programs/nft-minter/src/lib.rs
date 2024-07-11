@@ -1,10 +1,10 @@
 use anchor_lang::prelude::*;
 use anchor_spl::token::{self, Mint, TokenAccount, MintTo, Token};
 
-declare_id!("YOUR_PROGRAM_ID");
+declare_id!("GXFZLamQc3tELeRYeoVX88uthLCC12j7NRFkyCSXcDwd");
 
 #[program]
-pub mod solana_nft_minting {
+mod solana_nft_minting {
     use super::*;
 
     pub fn mint_nft(ctx: Context<MintNFT>, metadata: String, image_url: String) -> Result<()> {
@@ -36,7 +36,8 @@ pub struct MintNFT<'info> {
     #[account(mut)]
     pub token_account: Account<'info, TokenAccount>,
     pub mint_authority: Signer<'info>,
-    pub user: Signer<'info>,
+    #[account(mut)]
+    pub user: Signer<'info>, // Make the payer mutable
     pub token_program: Program<'info, Token>,
     pub system_program: Program<'info, System>,
     pub rent: Sysvar<'info, Rent>,
