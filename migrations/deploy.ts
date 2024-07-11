@@ -1,12 +1,22 @@
-// Migrations are an early feature. Currently, they're nothing more than this
-// single deploy script that's invoked from the CLI, injecting a provider
-// configured from the workspace's Anchor.toml.
-
-const anchor = require("@coral-xyz/anchor");
+const anchor = require('@project-serum/anchor');
 
 module.exports = async function (provider) {
-  // Configure client to use the provider.
+  // Configure the client to use the provider.
   anchor.setProvider(provider);
 
-  // Add your deploy script here.
+  // Add your deployment scripts here.
+  const nftMinter = anchor.workspace.SolanaNftMinting;
+  const vault = anchor.workspace.SolanaVault;
+  const swap = anchor.workspace.SolanaSwap;
+
+  console.log("Deploying Solana NFT Minting Program...");
+  await nftMinter.deploy();
+
+  console.log("Deploying Solana Vault Program...");
+  await vault.deploy();
+
+  console.log("Deploying Solana Swap Program...");
+  await swap.deploy();
+
+  console.log("Programs deployed successfully.");
 };

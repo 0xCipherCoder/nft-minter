@@ -5,7 +5,9 @@ seeds = false
 skip-lint = false
 
 [programs.localnet]
-nft_minter = "GXFZLamQc3tELeRYeoVX88uthLCC12j7NRFkyCSXcDwd"
+solana_nft_minting = "GXFZLamQc3tELeRYeoVX88uthLCC12j7NRFkyCSXcDwd"
+solana_swap = "AT1rUerisJ8vproAoX5ic93EGgGfBGyF1izobFuAgndN"
+solana_vault = "EZSkMDXfzCmy4n7sJoesYCoacANCcJvit5R5QDJ9m5rT"
 
 [registry]
 url = "https://api.apr.dev"
