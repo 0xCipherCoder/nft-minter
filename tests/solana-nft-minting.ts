@@ -3,6 +3,7 @@ import { Program } from "@coral-xyz/anchor";
 import { SolanaNftMinting } from "../target/types/solana_nft_minting";
 import { TOKEN_PROGRAM_ID, ASSOCIATED_TOKEN_PROGRAM_ID, getAssociatedTokenAddress } from "@solana/spl-token";
 import { assert } from "chai";
+import axios from "axios";
 
 describe("solana_nft_minting", () => {
   const provider = anchor.AnchorProvider.env();
@@ -13,7 +14,12 @@ describe("solana_nft_minting", () => {
 
   const collectionSize = 3;
   const metadata = ["NFT 1", "NFT 2", "NFT 3"];
-  const imageUrls = ["url1", "url2", "url3"];
+//   const imageUrls = ["https://ipfs.io/ipfs/QmQBHarz2WFczTjz5GnhjHrbUPDnB48W5BM2v2h6HbE1rZ/1.png", 
+//     "https://ipfs.io/ipfs/QmQBHarz2WFczTjz5GnhjHrbUPDnB48W5BM2v2h6HbE1rZ/10.png", 
+//     "https://ipfs.io/ipfs/QmQBHarz2WFczTjz5GnhjHrbUPDnB48W5BM2v2h6HbE1rZ/6.png"];
+  const imageUrls = ["url1", 
+        "url2", 
+        "url3"];
 
   let nftCollectionPda: anchor.web3.PublicKey;
   let mint: anchor.web3.Keypair;
@@ -66,6 +72,10 @@ describe("solana_nft_minting", () => {
       for (let i = 0; i < collectionSize; i++) {
         assert.equal(nftCollectionAccount.nfts[i].metadata, metadata[i]);
         assert.equal(nftCollectionAccount.nfts[i].imageUrl, imageUrls[i]);
+
+        // Fetch the image to ensure it's retrievable
+        // const response = await axios.get(imageUrls[i]);
+        // assert.equal(response.status, 200);
       }
 
       // Check token balance

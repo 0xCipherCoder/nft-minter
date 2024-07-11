@@ -29,7 +29,6 @@ pub mod solana_nft_minting {
                 image_url: image_urls[i as usize].clone(),
             };
 
-            // Create a unique seed for each NFT to avoid duplicate accounts
             let seeds = &[
                 b"nft_collection",
                 ctx.accounts.user.key.as_ref(),
@@ -54,7 +53,6 @@ pub mod solana_nft_minting {
         Ok(())
     }
 }
-
 
 #[derive(Accounts)]
 #[instruction(collection_size: u8)]
@@ -111,3 +109,15 @@ pub enum ErrorCode {
     #[msg("Invalid collection size")]
     InvalidCollectionSize,
 }
+
+pub fn get_nft_collection(ctx: Context<GetNFTCollection>) -> Result<NFTCollection> {
+    let nft_collection = &*ctx.accounts.nft_collection;
+    Ok(nft_collection.clone())
+}
+
+#[derive(Accounts)]
+pub struct GetNFTCollection<'info> {
+    #[account(mut)]
+    pub nft_collection: Account<'info, NFTCollection>,
+}
+
