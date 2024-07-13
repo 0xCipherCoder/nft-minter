@@ -50,6 +50,7 @@ This project consists of a series of programs using Anchor that allow for the mi
 
 2. Install dependencies:
     ```sh
+    npm install
     anchor build
     ```
 
