@@ -5,7 +5,7 @@ This project consists of a series of programs using Anchor that allow for the mi
 ## Features
 
 1. **Mint a Collection of NFTs**: Using Anchor, the program mints a collection of NFTs with associated metadata and images.
-2. **Vault System**: Develop a vault system to lock NFTs, where rental fees are returned to the protocol rather than the user.
+2. **Vault System**: Develop a vault system to lock NFTs, where rental fees are returned to the protocol rather than the user. These also provide unlocking of NFT.
 3. **Image Storage and Retrieval**: Ensure functional storage and retrieval of images, with appropriate metadata assigned to each NFT.
 4. **Swap Program**: Create a swap program using Native Rust or Anchor that allows users to exchange $SOL for NFTs, performing all necessary checks and enabling swapping between $SOL and NFTs.
 
@@ -141,7 +141,12 @@ This project consists of a series of programs using Anchor that allow for the mi
 
     ```sh
     anchor test
-   Compiling solana_vault v0.1.0 (/home/pradip/Cipher/OpenSource/nft-minter/programs/solana_vault)
+    ```
+
+    # Test Output
+
+```sh
+Compiling solana_vault v0.1.0 (/home/pradip/Cipher/OpenSource/nft-minter/programs/solana_vault)
     Finished release [optimized] target(s) in 2.17s
    Compiling solana_vault v0.1.0 (/home/pradip/Cipher/OpenSource/nft-minter/programs/solana_vault)
    Compiling solana_swap v0.1.0 (/home/pradip/Cipher/OpenSource/nft-minter/programs/solana_swap)
@@ -179,7 +184,7 @@ $ /home/pradip/Cipher/OpenSource/nft-minter/node_modules/.bin/ts-mocha -p ./tsco
 
 
   7 passing (6s)
-    ```
+  ```
 
 ### Test Descriptions
 
@@ -190,7 +195,7 @@ Verifies the correct assignment of metadata and image storage.
 
 **Locking NFTs:**
 
-Tests the vault functionality by locking an NFT.
+Tests the vault functionality by locking an NFT and also unlocking of NFT.
 Ensures rental fees are transferred to the protocol wallet.
 
 **Swapping $SOL for NFTs:**
